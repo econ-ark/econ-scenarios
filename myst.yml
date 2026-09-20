@@ -1,0 +1,91 @@
+# GENERATED when this REMARK was cut; edits here are lost on the next cut.
+# The project comes from the private repository this was cut from, with this paper's
+# own keys taken from content/reproduction.md.
+version: 1
+project:
+  title: Reproducing “Economic Scenarios for Transformative AI”
+  short_title: Reproduction
+  subtitle: Everything It Takes to Rerun the Monthly Model of Korinek et al. (2026), as an Econ-ARK REMARK
+  description: An Econ-ARK REMARK that reimplements the monthly model of Korinek, Jones, Sacher, Cotter,
+    and McCrory (2026) and documents the twelve inputs, definitions, and orderings that a transparent
+    reproduction requires and the paper leaves unstated. The reproduction agrees with the authors' scenario
+    explorer in every series and month to within 3.5e-14 and reproduces all 226 published numbers within
+    the paper's printed rounding. One script fails when any number stops reproducing.
+  date: 2026-09-18
+  keywords:
+  - artificial intelligence
+  - macroeconomic scenarios
+  - labor reallocation
+  - household saving
+  - reproduction
+  - Econ-ARK
+  authors:
+  - name: Alan Lujan
+    orcid: 0000-0002-5289-7054
+    email: alujan@jhu.edu
+    corresponding: true
+    github: alanlujan91
+    url: https://advanced.jhu.edu/directory/alan-lujan/
+    note: 'Assistant Program Director, Applied Economics, Krieger School of Arts and Sciences, Johns Hopkins
+      University, Washington, DC, and Econ-ARK. Email: alujan@jhu.edu.'
+    affiliations:
+    - id: jhu
+      institution: Johns Hopkins University
+      ror: https://ror.org/00za53h95
+    - id: econ-ark
+      institution: Econ-ARK
+      url: https://econ-ark.org
+  venue:
+    title: REMARK
+    url: https://github.com/econ-ark/REMARK
+  banner: content/theme/econ-ark-myst/banner.svg
+  open_access: true
+  github: https://github.com/econ-ark/econ-scenarios
+  license:
+    content: CC-BY-4.0
+    code: MIT
+  bibliography:
+  - content/references.bib
+  numbering:
+    figure: true
+    table: true
+  jupyter:
+    lite: true
+  plugins:
+  - content/theme/econ-ark-myst/plugins/fira-math.bundle.mjs
+  - content/theme/econ-ark-myst/plugins/part-wrapper.mjs
+  static_files:
+  - content/theme/econ-ark-myst/fonts
+  - code/econ_scenarios
+  - code/validation
+  - code/explore.py
+  - code/figures.py
+  - code/kernel.py
+  - code/pages.py
+  - code/tables.py
+  - code/theme.py
+  - code/exhibits.py
+  toc:
+  - file: content/reproduction.md
+  - file: content/reproduction-appendix.md
+  binder: https://econ-ark.github.io/econ-scenarios/reproduction-appendix/
+  downloads:
+  - title: Latest PDF
+    url: https://github.com/econ-ark/econ-scenarios/blob/main/content/exports/reproduction.pdf
+  doi: 10.5281/zenodo.22839070
+  zenodo: https://zenodo.org/records/22839070
+site:
+  template: article-theme
+  options:
+    logo: content/theme/econ-ark-myst/logo.png
+    logo_dark: content/theme/econ-ark-myst/logo-dark.png
+    logo_text: Econ-ARK
+    logo_url: https://econ-ark.org
+    logo_alt: Econ-ARK
+    favicon: content/theme/econ-ark-myst/favicon.png
+    style: content/theme/site.css
+  nav:
+  - title: The Authors' Explorer
+    url: https://www.anthropic.com/institute/econ-scenarios
+  - title: Econ-ARK
+    url: https://econ-ark.org

@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: If you use this REMARK, cite it as below.
+type: software
+title: Reproducing “Economic Scenarios for Transformative AI”
+abstract: An Econ-ARK REMARK that reimplements the monthly model of Korinek, Jones, Sacher, Cotter,
+  and McCrory (2026) and documents the twelve inputs, definitions, and orderings that a transparent
+  reproduction requires and the paper leaves unstated. The reproduction agrees with the authors' scenario
+  explorer in every series and month to within 3.5e-14 and reproduces all 226 published numbers within
+  the paper's printed rounding. One script fails when any number stops reproducing.
+authors:
+- family-names: Lujan
+  given-names: Alan
+  orcid: https://orcid.org/0000-0002-5289-7054
+  affiliation: Johns Hopkins University
+version: 0.1.0
+date-released: '2026-09-18'
+repository-code: https://github.com/econ-ark/econ-scenarios
+doi: 10.5281/zenodo.22839070
+license: MIT
+keywords:
+- artificial intelligence
+- macroeconomic scenarios
+- labor reallocation
+- household saving
+- reproduction
+- Econ-ARK
+references:
+- type: report
+  title: Economic Scenarios for Transformative AI
+  year: 2026
+  authors:
+  - family-names: Korinek
+    given-names: Anton
+  - family-names: Jones
+    given-names: Charles I.
+  - family-names: Sacher
+    given-names: Szymon
+  - family-names: Cotter
+    given-names: Tess
+  - family-names: McCrory
+    given-names: Peter
+  url: https://www.anthropic.com/institute/econ-scenarios

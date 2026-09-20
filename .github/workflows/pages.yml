@@ -1,0 +1,48 @@
+name: pages
+# Publishes the site to GitHub Pages on every push to main. Enable it once per repository under
+# Settings, Pages, Source: GitHub Actions. BASE_URL is what makes a project page resolve its
+# assets: the site is served from /<repo>, not from the domain root.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The theme is a submodule, and the default leaves its directory empty. MyST reports
+          # each unresolved logo, plugin and template, then exits 0, so the deploy would ship
+          # the fallback look and go green.
+          submodules: recursive
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      # The same script reproduce.sh runs, so the deployed site and the reproduced one are
+      # built by one path. It ends in sitecheck, which reads the built HTML: a missing typeface
+      # or an equation reverted to KaTeX fails the deploy here, where reproduce.sh only warns.
+      - run: ./site.sh
+        env:
+          BASE_URL: /${{ github.event.repository.name }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_build/html
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

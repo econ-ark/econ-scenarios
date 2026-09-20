@@ -1,0 +1,23 @@
+name: reproduce
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: ./reproduce.sh
+  # The Dockerfile is the container path, and this repository ships no binder environment, so
+  # nothing else would catch it breaking. Building it here keeps "reproducible from a clean
+  # machine" a checked claim: the image installs the pinned environment and runs the quick path.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t remark .
+      - run: docker run --rm remark ./reproduce_min.sh

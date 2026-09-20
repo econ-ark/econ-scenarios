@@ -1,0 +1,16 @@
+/*
+ * The one rule this repository adds to the copied Econ-ARK sheet. The faces used to be declared
+ * here too; theme.css now ships its own @font-face rules over the woff2 files in content/fonts,
+ * so a second set for the same family would only fight it in the cascade.
+ *
+ * code/theme.py writes content/theme/site.css from theme.css and this file, because MyST's
+ * style: option takes one path. This goes second, so it wins.
+ */
+
+/* A quiz is a page of its own in an iframe, which MyST sizes to a fixed aspect ratio. Give it
+   the height its questions and chart need. The selector matched one paper's quiz by name until
+   2026-09-18, which named that page in a sheet every cut carries. */
+div:has(> iframe[src$="-quiz.html"]) {
+  padding-bottom: 0 !important;
+  height: 960px;
+}

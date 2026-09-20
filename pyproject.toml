@@ -1,0 +1,56 @@
+[project]
+name = "econ-scenarios"
+version = "0.1.0"
+description = "A reproduction of Korinek, Jones, Sacher, Cotter and McCrory (2026), Economic Scenarios for Transformative AI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # HARK 0.17.2 plus the fixes of econ-ark/HARK#1820 (PR #1821), #1829 (PR #1830), and the Markov
+    # value function's survival discount (PR #1832), all merged 2026-09-11 and all needed by the
+    # household models built on these scenarios. Move to the first release carrying all three.
+    "econ-ark @ git+https://github.com/econ-ark/HARK@251b48077f41f71e7a2d6bb3c97e090312caac3b",
+    "numpy>=2.5.3",
+]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.11.1",
+    "mystmd>=1.10.1",
+    "playwright>=1.63.0",
+    "pytest>=9.1.1",
+]
+docs = [
+    "ipykernel>=7.3.0",
+    "ipywidgets>=8.1.9",
+    "jupyter-server>=2.21.0",
+    "matplotlib>=3.11.1",
+]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["code/econ_scenarios"]
+
+[tool.hatch.metadata]
+allow-direct-references = true  # the HARK git pin above
+
+[tool.pytest.ini_options]
+testpaths = ["code/tests"]
+pythonpath = ["code"]
+# `pytest -m "not compute"` is the fast path. The marker selects OUT on demand and never reaches
+# addopts, so a plain `pytest` runs everything and reproduce.sh keeps doing so: a reader's gate
+# must never inherit a maintainer's shortcut.
+markers = [
+  "compute: solves a model, draws a figure, or fetches upstream data",
+]
+
+# ty resolves imports the way the code runs: code/ for the packages, code/tests for the siblings a
+# test imports by bare name (pf_fixtures, conftest). The only three left unresolved are js,
+# micropip and pyodide.http, which exist only in the browser kernel; see code/kernel.py.
+[tool.ty.environment]
+extra-paths = ["code", "code/tests"]

@@ -1,0 +1,18 @@
+# Test modules that solve a model, draw a figure or fetch upstream data, one stem per line.
+# conftest reads this and marks each one ``compute``, so `pytest -m "not compute"` asks about
+# the repository without executing it.
+#
+# It is a file rather than a list in conftest because conftest is carried by every cut and
+# these modules are not. Each cut gets the lines naming tests it has, derived at export the way
+# the bibliography is, so no repository holds the names of another paper's tests.
+
+# Solve a household.
+
+# Run the scenario model against a reference, draw a figure, or fetch public data.
+test_cleanroom
+test_figures
+test_oracle
+test_rejection
+test_upstream_flows
+test_upstream_fred
+test_upstream_usage
