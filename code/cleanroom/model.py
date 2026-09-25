@@ -140,6 +140,17 @@ def _bisect(fun, lo, hi, tol=1e-15, maxit=300):
     return 0.5 * (lo + hi)
 
 
+def _capital_gap(dlK, eps, B, k, room=1.0):
+    """The rental gap at which the capital demand ``dlK`` meets the supply eps times the gap:
+    zero at an infinite elasticity, else bisected up to where the labor share ``room`` less
+    B e^{k dr} runs out.
+    """
+    if math.isinf(eps):
+        return 0.0
+    drmax = math.log(room / B) / k
+    return _bisect(lambda x: dlK(x) - eps * x, -2.0, drmax - 1e-12)
+
+
 class Model:
     """One parameterisation (calibration + scenario + readings)."""
 
@@ -334,11 +345,7 @@ class Model:
             dlK = math.log((1.0 - sL) / p["sK0"]) + dly - dr
             return sL, dlsL, what, dly, dlK
 
-        if math.isinf(eps):
-            dr = 0.0
-        else:
-            drmax = math.log(1.0 / B) / k
-            dr = _bisect(lambda x: pieces(x)[4] - eps * x, -2.0, drmax - 1e-12)
+        dr = _capital_gap(lambda x: pieces(x)[4], eps, B, k)
         sL, _dlsL, what, dly, dlK = pieces(dr)
         return {
             "dr": dr,
@@ -367,11 +374,7 @@ class Model:
         def kdem(dr):
             return math.log(B * math.exp(k * dr) / p["sK0"]) + y_of(dr) + Aterm - dr
 
-        if math.isinf(eps):
-            dr = 0.0
-        else:
-            drmax = math.log(1.0 / B) / k
-            dr = _bisect(lambda x: kdem(x) - eps * x, -2.0, drmax - 1e-12)
+        dr = _capital_gap(kdem, eps, B, k)
         y = y_of(dr)
         wC = (math.log(lamC) + y - math.log(xC)) / s
         wN = (y - math.log(xN)) / s
@@ -404,11 +407,7 @@ class Model:
             _wN, y = parts(dr)
             return math.log(B * math.exp(k * dr) / p["sK0"]) + y + Aterm - dr
 
-        if math.isinf(eps):
-            dr = 0.0
-        else:
-            drmax = math.log((1.0 - cterm) / B) / k
-            dr = _bisect(lambda x: kdem(x) - eps * x, -2.0, drmax - 1e-12)
+        dr = _capital_gap(kdem, eps, B, k, 1.0 - cterm)
         wN, y = parts(dr)
         lC = p["lC0"] * lamC * math.exp(y - s * wC)
         return {

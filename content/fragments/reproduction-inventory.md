@@ -4,7 +4,7 @@
 \begin{table}
 \centering
 \footnotesize
-\caption{The inputs, definitions, and orderings the reproduction had to supply: where the paper's text stops, where each was taken from, and what turns on it.}
+\caption{The inputs, definitions, and orderings a reimplementation needs beyond the paper's text: where the text stops, where I took each from, and what turns on it.}
 \label{tbl-inventory}
 \begin{tabular}{p{0.246\linewidth}p{0.237\linewidth}p{0.227\linewidth}p{0.188\linewidth}}
 \toprule
@@ -54,7 +54,7 @@ The survey microdata & reports them in Table 2, Table 4, and Figure 1 & not publ
       table.hline(stroke: 0.75pt),
     )
   },
-  caption: [The inputs, definitions, and orderings the reproduction had to supply: where the paper's text stops, where each was taken from, and what turns on it.],
+  caption: [The inputs, definitions, and orderings a reimplementation needs beyond the paper's text: where the text stops, where I took each from, and what turns on it.],
   kind: table,
 )
 :::

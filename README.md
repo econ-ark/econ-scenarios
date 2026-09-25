@@ -1,4 +1,4 @@
-# Reproducing "Economic Scenarios for Transformative AI"
+# Reproducing “Economic Scenarios for Transformative AI”
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22839070.svg)](https://doi.org/10.5281/zenodo.22839070)
 
@@ -9,8 +9,8 @@ here the economic scenarios, build a monthly model of how AI could change output
 and employment between 2024 and 2030 under three scenarios: modest, substantial, and extreme. It
 gives paths for the wage in cognitive work, the wage in all other work, the rental rate of
 capital, and the transition probabilities among four employment states, all relative to an
-economy without AI. The paper publishes 226 numbers and an explorer that runs the model in the
-browser.
+economy without AI. The paper publishes tables, 226 of whose numbers public inputs can check,
+and an explorer that runs the model in the browser.
 
 ## The article
 
@@ -122,7 +122,7 @@ Each fragment's first line names the module that writes it and the command that 
 
 Each check answers a different question. The explorer comparison holds the model to a full
 monthly path, so it detects any error that moves a series at all; what it establishes is
-agreement with the authors' implementation. Published tables hold the model to 226 numbers at
+agreement with the authors' implementation. Published tables hold the model to 226 published numbers at
 their printed precision, so they establish agreement with what the paper reports, down to half
 a printed digit and no further. Planted errors measure the gap between the two directly: every
 one of them fails the explorer comparison, a minority survive the tables, and the largest

@@ -28,7 +28,6 @@ from econ_scenarios import (
     simulate,
 )
 from figures import (
-    DPI,
     GRID,
     INK,
     MUTED,
@@ -36,8 +35,8 @@ from figures import (
     Panel,
     build,
     chrome,
-    layout_overlaps,
     panel_title,
+    save_figure,
 )
 from matplotlib.colors import LinearSegmentedColormap
 from theme import (
@@ -56,7 +55,7 @@ from validation.cases import (
     PATH_TOLERANCE,
     QUIZ,
 )
-from validation.compare import path_differences, worst
+from validation.compare import case_gap, path_differences, worst
 from validation.oracle import run_explorer, run_explorer_quiz
 from validation.plants import PLANTS
 from validation.published import Check, cached_runner, checks
@@ -78,13 +77,13 @@ SHORT = {
     "quit-fraction": "quits as\nfraction",
     "targets-at-t": "same-month\ntargets",
     "first-order-rows": "first-order\nrows",
-    "scenario-mu-in-steady-state": "scenario mu\nsteady state",
+    "scenario-mu-in-steady-state": "scenario $\\mu$\nsteady state",
 }
 ONE_WORD = {
     "quit-fraction": "quits",
     "targets-at-t": "timing",
     "first-order-rows": "first-order",
-    "scenario-mu-in-steady-state": "steady-state mu",
+    "scenario-mu-in-steady-state": "steady-state $\\mu$",
 }
 BINDING_NAMES = {
     "Unemployment rate, cognitive workers, pct.": "cognitive unemployment",
@@ -104,7 +103,7 @@ SERIES_SHORT = {
     "lnW_N": "other wage",
     "lnMPL_C": "cognitive marginal product",
     "lnW_C_clear": "cognitive clearing wage",
-    "wage_gap": "cognitive wage discount",
+    "wage_gap": "log cognitive wage ratio",
     "q_C": "cognitive quit rate",
     "pot_lnW": "potential wage",
     "pot_lnSL": "potential labor share",
@@ -118,8 +117,8 @@ def _style(ax, grid_axis="x") -> None:
 
 
 def _title(ax, title, subtitle) -> None:
-    """``figures.panel_title`` plus a subtitle offset in points rather than axes fraction, which
-    is what these figures need and ``figures.frame`` does not do.
+    """``figures.panel_title`` plus a subtitle offset in points, which ``figures.frame`` does not
+    offer.
     """
     panel_title(ax, title)
     ax.annotate(
@@ -135,15 +134,7 @@ def _title(ax, title, subtitle) -> None:
 
 
 def _save(fig, name) -> None:
-    path = OUT / f"{name}.png"
-    fig.set_dpi(DPI)  # check the layout at the resolution it is saved at
-    fig.savefig(path, dpi=DPI, metadata={"Software": None}, facecolor="white")
-    overlaps = layout_overlaps(fig)
-    plt.close(fig)
-    if overlaps:
-        msg = f"{name}: overlapping text: {overlaps}"
-        raise RuntimeError(msg)
-    log.info("wrote %s", path)
+    log.info("wrote %s", save_figure(fig, OUT / f"{name}.png"))
 
 
 def _half_unit(c: Check) -> float:
@@ -193,23 +184,7 @@ def gather():
     oracles = {s.name: run_explorer(s, CAL) for s in SCENARIOS3}
     comparisons = {}
     for spec in ORACLE_CASES.values():
-        sim = simulate(
-            spec.scenario,
-            spec.cal,
-            horizon=spec.horizon,
-            level_form=spec.form,
-        )
-        comparisons[spec.label] = worst(
-            path_differences(
-                sim,
-                run_explorer(
-                    spec.scenario,
-                    spec.cal,
-                    horizon=spec.horizon,
-                    level_form=spec.form,
-                ),
-            ),
-        )[1]
+        comparisons[spec.label] = case_gap(spec)[2]
     for name, answers in QUIZ.items():
         sim = simulate(answers_to_scenario(answers), horizon=2035.0)
         comparisons[f"quiz: {name}"] = worst(
@@ -333,7 +308,7 @@ def figure_1(comparisons, correct, plants, sweeps) -> None:
     ax_band.set_ylim(-0.6, len(PLANTS) + 0.9)  # the full-strength panels' rows
     ax_band.set_yticks(rows, [""] * len(rows))
     ax_band.set_xlabel(
-        "strength s of the planted error",
+        "strength s of the planted mistake",
         fontsize=LABEL,
         color=MUTED,
     )
@@ -395,7 +370,7 @@ def figure_1(comparisons, correct, plants, sweeps) -> None:
     _style(ax_gap)
     _title(
         ax_gap,
-        "Errors at Full Strength",
+        "Mistakes at Full Strength",
         f"dashed: the path tolerance, {_sci(PATH_TOLERANCE)}",
     )
 
@@ -437,17 +412,11 @@ def figure_1(comparisons, correct, plants, sweeps) -> None:
     _save(fig, "validation-1")
 
 
-def figure_2(correct, sweeps) -> None:
-    outputs = [c for c in correct if c.role == "output"]
-    groups = list(dict.fromkeys(_group(c) for c in outputs))
-    fig, (ax_margin, ax_matrix) = plt.subplots(
-        1,
-        2,
-        figsize=(TEXT_WIDTH, 3.3),
-        gridspec_kw={"width_ratios": (1.0, 0.9)},
-        layout="constrained",
-    )
-
+def _binding_rows(
+    outputs: list[Check],
+    sweeps,
+) -> list[tuple[Check, list[str]]]:
+    """The first published number each planted error's sweep catches, one row per number."""
     by_key = {_key(c): c for c in outputs}
     binding: dict[float, tuple[Check, list[str]]] = {}
     for plant in PLANTS:
@@ -458,7 +427,17 @@ def figure_2(correct, sweeps) -> None:
             _, bugs = binding.setdefault(round(c.model, 9), (c, []))
             if plant not in bugs:
                 bugs.append(plant)
-    rows = list(binding.values())
+    return list(binding.values())
+
+
+def _margin_panel(
+    ax_margin,
+    outputs: list[Check],
+    rows: list[tuple[Check, list[str]]],
+) -> None:
+    """Draw the left panel: every output's margin, and the numbers each planted error catches
+    first.
+    """
     y = np.arange(len(rows) + 1)[::-1]
     rng = np.random.default_rng(0)
     ax_margin.plot(
@@ -513,13 +492,20 @@ def figure_2(correct, sweeps) -> None:
         "diamonds: first to leave their rounding",
     )
 
+
+def _missed_share(outputs: list[Check], groups: list[str], sweeps):
+    """Share of each group's outputs missed by each planted error, at full strength."""
     counts = np.zeros((len(groups), len(PLANTS)))
     totals = np.array([sum(1 for c in outputs if _group(c) == g) for g in groups])
     for j, plant in enumerate(PLANTS):
         missed = {_key(c) for c in sweeps[plant].missed[-1]}
         for c in outputs:
             counts[groups.index(_group(c)), j] += _key(c) in missed
-    share = counts / totals[:, None]
+    return counts, totals, counts / totals[:, None]
+
+
+def _draw_missed_matrix(ax_matrix, groups: list[str], counts, totals, share) -> None:
+    """Draw the right panel: the heatmap of missed shares, its cell counts, and its ticks."""
     ax_matrix.imshow(share, cmap=HAZARD_RAMP, vmin=0, vmax=1, aspect="auto")
     for i in range(len(groups)):
         for j in range(len(PLANTS)):
@@ -551,14 +537,29 @@ def figure_2(correct, sweeps) -> None:
         side.set_visible(False)
     _title(
         ax_matrix,
-        "Outputs Missed, by Error",
+        "Outputs Missed, by Mistake",
         "at full strength, of the row",
     )
+
+
+def figure_2(correct, sweeps) -> None:
+    outputs = [c for c in correct if c.role == "output"]
+    groups = list(dict.fromkeys(_group(c) for c in outputs))
+    fig, (ax_margin, ax_matrix) = plt.subplots(
+        1,
+        2,
+        figsize=(TEXT_WIDTH, 3.3),
+        gridspec_kw={"width_ratios": (1.0, 0.9)},
+        layout="constrained",
+    )
+    _margin_panel(ax_margin, outputs, _binding_rows(outputs, sweeps))
+    counts, totals, share = _missed_share(outputs, groups, sweeps)
+    _draw_missed_matrix(ax_matrix, groups, counts, totals, share)
     _save(fig, "validation-2")
 
 
 def figure_5(correct, printed, quit_counts) -> None:
-    """The choices the paper's text leaves open: the outputs missed on Table 1's printed inputs, and the
+    """The choices a reimplementation makes beyond the paper's text: the outputs missed on Table 1's printed inputs, and the
     published numbers reproduced at each responsive quit share under both orders of the rate
     conversion and the split.
     """

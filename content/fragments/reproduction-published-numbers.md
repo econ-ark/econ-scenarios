@@ -4,7 +4,7 @@
 \begin{table}
 \centering
 \footnotesize
-\caption{Every number the paper and the explorer page print that public inputs can reproduce, by source. A number is predicted when the paper's text fixes how it is computed before any comparison, and fitted when a definition or an unstated parameter had to be taken from the explorer or inferred by matching. Inputs are the calibration and survey-coding values the model takes as given, which no error in its dynamics could move; outputs are what the simulation produces. The last column counts the numbers the reproduction prints as published at the paper's rounding.}
+\caption{Every number the paper and the explorer's page print that can be reproduced from public inputs, by source, split into predicted and fitted numbers and into inputs and outputs as the text defines them. The last column counts the numbers reproduced at the paper's rounding.}
 \label{tbl-published-numbers}
 \begin{tabular}{lrrrrr}
 \toprule
@@ -62,7 +62,7 @@ All & 211 & 15 & 43 & 183 & 226 of 226 \\
       table.hline(stroke: 0.75pt),
     )
   },
-  caption: [Every number the paper and the explorer page print that public inputs can reproduce, by source. A number is predicted when the paper's text fixes how it is computed before any comparison, and fitted when a definition or an unstated parameter had to be taken from the explorer or inferred by matching. Inputs are the calibration and survey-coding values the model takes as given, which no error in its dynamics could move; outputs are what the simulation produces. The last column counts the numbers the reproduction prints as published at the paper's rounding.],
+  caption: [Every number the paper and the explorer's page print that can be reproduced from public inputs, by source, split into predicted and fitted numbers and into inputs and outputs as the text defines them. The last column counts the numbers reproduced at the paper's rounding.],
   kind: table,
 )
 :::

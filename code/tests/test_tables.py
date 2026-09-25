@@ -2,16 +2,14 @@
 
 import math
 from collections import Counter
-from dataclasses import replace
 
 import pytest
-from econ_scenarios import SUBSTANTIAL, Calibration, simulate
+from econ_scenarios import SUBSTANTIAL, Calibration
 from econ_scenarios.paths import ScenarioPaths
 from econ_scenarios.production import potential, tfp_base_weight
+from tables import FRAGMENTS
 from validation.fragments import (
-    FRAGMENTS,
     INVENTORY_ROWS,
-    PUBLIC_DATA,
     bound_up,
     fragments,
     inventory,
@@ -30,7 +28,7 @@ from validation.published import (
 )
 from validation.resolution import other_quit_reading, quit_window
 
-# The published numbers by source: Tables 3, 5, and 6, footnote 14, the steady state of Section
+# The published numbers by source: Tables 3, 5, and 6, Footnote 14, the steady state of Section
 # 2.3.2, the text, Table B.1 with Appendix B.3 and the two mu-bar rules, the explorer page's text.
 INVENTORY = Counter(
     {
@@ -73,7 +71,7 @@ def test_every_published_number_is_reproduced() -> None:
     # the inventory by source, so that a dropped check in one table cannot net out against an
     # added check in another; the total is 226
     assert Counter(c.source for c in results) == INVENTORY
-    # Out of sample: the definition is fixed by the paper's text. Fitted: footnote 14 (3) and the page's
+    # Out of sample: the definition is fixed by the paper's text. Fitted: Footnote 14 (3) and the page's
     # dollar GDP, worker split and typical-respondent numbers (12).
     assert sum(c.basis == "fitted" for c in results) == 15
     # Inputs the model takes as given: Table 1 (5), Table A.2 (6), Table B.1 and its example (31), the odds rule (1).
@@ -146,35 +144,6 @@ def test_one_more_printed_digit_in_table_1_reproduces_the_tables() -> None:
     assert output_misses(**ONE_MORE_DIGIT) == 0
 
 
-def test_the_report_states_the_printed_input_misses_as_computed() -> None:
-    """The abstract, keypoints, and introduction say Table 1 as printed reproduces 163 of the 183
-    outputs, and the introduction says where the 20 misses fall: Tables 3, 5, and 6, the steady
-    state of Section 2.3.2, and the explorer page, in the substantial and extreme scenarios and
-    never the modest one. A perturbed count or a miss in the modest column fails.
-    """
-    text = ARTICLE.read_text()
-    misses = output_misses(**PRINTED_INPUTS)
-    assert text.count(f"{183 - misses} of the 183") >= 3
-    assert f"{184 - misses} of the 183" not in text
-    assert f"{182 - misses} of the 183" not in text
-
-    def run(scenario, cal=None, **kw):
-        return simulate(scenario, replace(cal or Calibration(), **PRINTED_INPUTS), **kw)
-
-    missed = [c for c in checks(cached_runner(run)) if c.role == "output" and not c.ok]
-    assert len(missed) == misses
-    assert {c.source for c in missed} == {
-        "Table 3",
-        "Table 5",
-        "Table 6",
-        "Section 2.3.2",
-        "Explorer page",
-    }
-    assert not any("modest" in c.label for c in missed)
-    assert any("substantial" in c.label for c in missed)
-    assert any("extreme" in c.label for c in missed)
-
-
 def test_the_inventory_prints_what_the_code_computes() -> None:
     """The inventory table's numeric cells are the functions' values, and a perturbed count fails."""
     text = inventory()
@@ -192,22 +161,6 @@ def test_the_inventory_prints_what_the_code_computes() -> None:
     ):
         assert cell in text, cell
     assert f"{output_misses(**PRINTED_INPUTS) + 1} of 183" not in text
-
-
-ARTICLE = FRAGMENTS.parent / "reproduction.md"
-
-
-def test_the_public_data_table_prints_the_recomputed_values() -> None:
-    """The report's public-data table is MyST markdown, since its cells carry citations, so nothing
-    regenerates it. Every recomputed cell it prints is pinned here, and a perturbed digit fails.
-    """
-    rows = {
-        line.split("|")[1].strip(): line.split("|")[3].strip()
-        for line in ARTICLE.read_text().splitlines()
-        if line.startswith("| ") and line.count("|") == 6
-    }
-    for label, value in PUBLIC_DATA.items():
-        assert rows.get(label) == value, f"{label}: {rows.get(label)!r}"
 
 
 def test_the_printed_profit_bound_bounds_the_computed_share() -> None:

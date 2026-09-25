@@ -15,7 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "matplotlib>=3.11.1",
-    "mystmd>=1.10.1",
+    "mystmd>=1.11.0",
     "playwright>=1.63.0",
     "pytest>=9.1.1",
 ]
@@ -50,7 +50,7 @@ markers = [
 ]
 
 # ty resolves imports the way the code runs: code/ for the packages, code/tests for the siblings a
-# test imports by bare name (pf_fixtures, conftest). The only three left unresolved are js,
-# micropip and pyodide.http, which exist only in the browser kernel; see code/kernel.py.
+# test imports by bare name (conftest, fixture modules). The only three left unresolved are js,
+# micropip and pyodide.http, which exist only in the browser kernel.
 [tool.ty.environment]
 extra-paths = ["code", "code/tests"]

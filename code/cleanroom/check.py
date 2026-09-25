@@ -49,14 +49,7 @@ def prop1_vs_39(mod, k, perturb=0.0):
 
 def demand_inverts_mpl(mod, k, perturb=0.0):
     o = mod.out
-    P = mod.prop1(
-        o["m"][k],
-        o["d"][k],
-        o["a"][k],
-        o["psi"][k],
-        o["rho"][k],
-        o["dlnA"][k],
-    )
+    P = prop1_at(mod, k)
     S = mod.sys_mpl(o["l_C"][k], o["l_N"][k], P["B"], P["LamC"], o["dlnA"][k])
     D = mod.sys_demand(S["wC"] + perturb, o["l_N"][k], P["B"], P["LamC"], o["dlnA"][k])
     return abs(D["lC"] - o["l_C"][k])

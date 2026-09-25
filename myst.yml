@@ -7,10 +7,11 @@ project:
   short_title: Reproduction
   subtitle: Everything It Takes to Rerun the Monthly Model of Korinek et al. (2026), as an Econ-ARK REMARK
   description: An Econ-ARK REMARK that reimplements the monthly model of Korinek, Jones, Sacher, Cotter,
-    and McCrory (2026) and documents the twelve inputs, definitions, and orderings that a transparent
-    reproduction requires and the paper leaves unstated. The reproduction agrees with the authors' scenario
-    explorer in every series and month to within 3.5e-14 and reproduces all 226 published numbers within
-    the paper's printed rounding. One script fails when any number stops reproducing.
+    and McCrory (2026) and records the twelve inputs, definitions, and orderings a reimplementation needs
+    beyond the paper's text, most of which can be read from the authors' scenario explorer. The reimplementation
+    agrees with the authors' scenario explorer in every series and month to rounding error and reproduces
+    all 226 published numbers within the paper's printed rounding. One script fails when any number stops
+    reproducing.
   date: 2026-09-18
   keywords:
   - artificial intelligence
@@ -38,7 +39,7 @@ project:
   venue:
     title: REMARK
     url: https://github.com/econ-ark/REMARK
-  banner: content/theme/econ-ark-myst/banner.svg
+  banner: content/theme/econ-ark-myst/brand/banner.svg
   open_access: true
   github: https://github.com/econ-ark/econ-scenarios
   license:
@@ -49,8 +50,6 @@ project:
   numbering:
     figure: true
     table: true
-  jupyter:
-    lite: true
   plugins:
   - content/theme/econ-ark-myst/plugins/fira-math.bundle.mjs
   - content/theme/econ-ark-myst/plugins/part-wrapper.mjs
@@ -68,7 +67,6 @@ project:
   toc:
   - file: content/reproduction.md
   - file: content/reproduction-appendix.md
-  binder: https://econ-ark.github.io/econ-scenarios/reproduction-appendix/
   downloads:
   - title: Latest PDF
     url: https://github.com/econ-ark/econ-scenarios/blob/main/content/exports/reproduction.pdf
@@ -77,12 +75,12 @@ project:
 site:
   template: article-theme
   options:
-    logo: content/theme/econ-ark-myst/logo.png
-    logo_dark: content/theme/econ-ark-myst/logo-dark.png
+    logo: content/theme/econ-ark-myst/brand/logo.png
+    logo_dark: content/theme/econ-ark-myst/brand/logo-dark.png
     logo_text: Econ-ARK
     logo_url: https://econ-ark.org
     logo_alt: Econ-ARK
-    favicon: content/theme/econ-ark-myst/favicon.png
+    favicon: content/theme/econ-ark-myst/brand/favicon.png
     style: content/theme/site.css
   nav:
   - title: The Authors' Explorer

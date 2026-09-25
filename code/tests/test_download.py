@@ -31,7 +31,7 @@ def answers(monkeypatch, *replies: object) -> list[int]:
     calls: list[int] = []
     sequence = list(replies)
 
-    def _open(request, timeout=None):  # noqa: ARG001
+    def _open(request, timeout=None):
         calls.append(1)
         reply = sequence.pop(0)
         if isinstance(reply, Exception):

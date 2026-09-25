@@ -185,6 +185,119 @@ def _targets(
     return ell0[0] + ell0[1] - target_N, target_N, shift
 
 
+def _asset_supply(
+    worker_assets: np.ndarray
+    | Callable[[int, dict[str, list[float]], Callable[[float], float]], float]
+    | None,
+    n_months: int,
+    level_form: str,
+) -> tuple[Callable[..., float] | None, np.ndarray]:
+    """``simulate``'s ``worker_assets`` as a supply function, or else as one value per month,
+    checked against the run's length and its level form.
+    """
+    supply = worker_assets if callable(worker_assets) else None
+    supplied = (
+        np.zeros(n_months + 1)
+        if worker_assets is None or supply is not None
+        else np.asarray(worker_assets, dtype=float)
+    )
+    if len(supplied) != n_months + 1:
+        msg = f"worker_assets needs one value per month, {n_months + 1}, got {len(supplied)}"
+        raise ValueError(
+            msg,
+        )
+    if level_form != "exact" and (supply is not None or np.any(supplied != 0.0)):
+        msg = "worker_assets shift the capital supply only in the exact rows"
+        raise ValueError(
+            msg,
+        )
+    return supply, supplied
+
+
+def _assets(
+    k: int,
+    supply: Callable[..., float] | None,
+    supplied: np.ndarray,
+    out: dict[str, list[float]],
+    x: AIState,
+    dlnA: float,
+    ell: list[float],
+    ss: SteadyState,
+    cal: Calibration,
+) -> float:
+    """The workers' extra assets supplied in month k."""
+    if supply is None:
+        return float(supplied[k])
+
+    # The month's net return at any supplied assets: the actual economy at this month's
+    # employment, which step 8 reads at the assets finally supplied.
+    def rental(a: float, x=x, dlnA=dlnA, ell_now=(ell[0], ell[1])) -> float:
+        return (
+            cal.r_bar * math.exp(actual_economy(x, dlnA, ell_now, ss.ell0, cal, a).dlnr)
+            - cal.delta
+        )
+
+    return float(supply(k, out, rental))
+
+
+def _quit_rates(
+    cal: Calibration,
+    ss: SteadyState,
+    q_x: tuple[float, float],
+    q_t: tuple[float, float],
+    f_prev: list[float],
+) -> list[float]:
+    """Step 5's quit rates, responding to last month's job finding in the order ``cal`` reads."""
+    if cal.quit_order == "split_then_convert":
+        return [
+            rate_from_fraction(q_x[o] + q_t[o] * f_prev[o] / ss.f[o]) for o in (0, 1)
+        ]
+    return [
+        (1.0 - cal.q_T_share) * ss.q[o] + cal.q_T_share * ss.q[o] * f_prev[o] / ss.f[o]
+        for o in (0, 1)
+    ]
+
+
+def _matching(
+    ss: SteadyState,
+    cal: Calibration,
+    mu: float,
+    U: list[float],
+    v_C: float,
+    v_N: float,
+) -> tuple[float, float, float, float, list[float]]:
+    """Step 6: the two search pools, their hires, and each origin's job-finding rate."""
+    S_C = U[0] + mu * U[1]
+    S_N = mu * U[0] + U[1]
+    H_C = hires(ss.chi, S_C, v_C, cal.iota)
+    H_N = hires(ss.chi, S_N, v_N, cal.iota)
+    per_C = H_C / S_C if S_C > 0.0 else 0.0
+    per_N = H_N / S_N if S_N > 0.0 else 0.0
+    return S_C, S_N, H_C, H_N, [per_C + mu * per_N, mu * per_C + per_N]
+
+
+def _next_stocks(
+    ell: list[float],
+    U: list[float],
+    q: list[float],
+    D_C: float,
+    H_C: float,
+    H_N: float,
+    f: list[float],
+    t: float,
+) -> tuple[list[float], list[float]]:
+    """Step 7: employment and the unemployment pools next month, Eqs. (36)-(37)."""
+    ell_next = [(1.0 - q[0]) * ell[0] - D_C + H_C, (1.0 - q[1]) * ell[1] + H_N]
+    U_next = [
+        U[0] + q[0] * ell[0] + D_C - f[0] * U[0],
+        U[1] + q[1] * ell[1] - f[1] * U[1],
+    ]
+    if min(ell_next + U_next) < 0.0:
+        msg = f"a stock turns negative after t = {t}"
+        raise ArithmeticError(msg)
+    return ell_next, U_next
+
+
 def simulate(
     scenario: Scenario,
     cal: Calibration | None = None,
@@ -220,22 +333,7 @@ def simulate(
     paths = ScenarioPaths(scenario, cal)
     h = cal.h
     n_months = round((horizon - cal.t0) * cal.months_per_year)
-    supply = worker_assets if callable(worker_assets) else None
-    supplied = (
-        np.zeros(n_months + 1)
-        if worker_assets is None or supply is not None
-        else np.asarray(worker_assets, dtype=float)
-    )
-    if len(supplied) != n_months + 1:
-        msg = f"worker_assets needs one value per month, {n_months + 1}, got {len(supplied)}"
-        raise ValueError(
-            msg,
-        )
-    if level_form != "exact" and (supply is not None or np.any(supplied != 0.0)):
-        msg = "worker_assets shift the capital supply only in the exact rows"
-        raise ValueError(
-            msg,
-        )
+    supply, supplied = _asset_supply(worker_assets, n_months, level_form)
     frozen_at = math.inf if freeze_after is None else freeze_after
     q_x, q_t = cal.quit_fractions
     xi_m = cal.xi**h
@@ -256,19 +354,7 @@ def simulate(
         x = paths.at(min(t, frozen_at))
         x_next = paths.at(min(cal.t0 + (k + 1) * h, frozen_at))
         # Steps 2-3: capital market, wage, shares and targets.
-        if supply is not None:
-            # The month's net return at any supplied assets: the actual economy at this month's
-            # employment, which step 8 below reads at the assets finally supplied.
-            def rental(a: float, x=x, dlnA=dlnA, ell_now=(ell[0], ell[1])) -> float:
-                return (
-                    cal.r_bar
-                    * math.exp(actual_economy(x, dlnA, ell_now, ss.ell0, cal, a).dlnr)
-                    - cal.delta
-                )
-
-            assets = float(supply(k, out, rental))
-        else:
-            assets = float(supplied[k])
+        assets = _assets(k, supply, supplied, out, x, dlnA, ell, ss, cal)
         pot = potential(x, dlnA, cal, level_form, assets)
         pot_exact = (
             pot if level_form == "exact" else potential(x, dlnA, cal, "exact", assets)
@@ -290,28 +376,12 @@ def simulate(
         excess = max(0.0, ell[0] - demand.ell_C)
         demand_gap = max(0.0, demand.ell_C - ell[0])
         # Step 5: separations and openings.
-        if cal.quit_order == "split_then_convert":
-            q = [
-                rate_from_fraction(q_x[o] + q_t[o] * f_prev[o] / ss.f[o])
-                for o in (0, 1)
-            ]
-        else:
-            q = [
-                (1.0 - cal.q_T_share) * ss.q[o]
-                + cal.q_T_share * ss.q[o] * f_prev[o] / ss.f[o]
-                for o in (0, 1)
-            ]
+        q = _quit_rates(cal, ss, q_x, q_t, f_prev)
         D_C = max(0.0, excess - q[0] * ell[0])
         v_C = (max(0.0, q[0] * ell[0] - excess) + theta * demand_gap) / ss.pi_bar[0]
         v_N = (q[1] + theta * shortfall_N) * ell[1] / ss.pi_bar[1]
         # Step 6: matching.
-        S_C = U[0] + mu * U[1]
-        S_N = mu * U[0] + U[1]
-        H_C = hires(ss.chi, S_C, v_C, cal.iota)
-        H_N = hires(ss.chi, S_N, v_N, cal.iota)
-        per_C = H_C / S_C if S_C > 0.0 else 0.0
-        per_N = H_N / S_N if S_N > 0.0 else 0.0
-        f = [per_C + mu * per_N, mu * per_C + per_N]
+        S_C, S_N, H_C, H_N, f = _matching(ss, cal, mu, U, v_C, v_N)
         # Step 8: the actual economy at realized employment.
         act = actual_economy(x, dlnA, (ell[0], ell[1]), ss.ell0, cal, assets)
         lnW_avg = math.log(
@@ -325,14 +395,7 @@ def simulate(
             else cal.g * (math.exp(cal.lam * act.lnY - one_minus_phi_R * dlnA) - 1.0)
         )
         # Step 7: stocks, Eqs. (36)-(37).
-        ell_next = [(1.0 - q[0]) * ell[0] - D_C + H_C, (1.0 - q[1]) * ell[1] + H_N]
-        U_next = [
-            U[0] + q[0] * ell[0] + D_C - f[0] * U[0],
-            U[1] + q[1] * ell[1] - f[1] * U[1],
-        ]
-        if min(ell_next + U_next) < 0.0:
-            msg = f"a stock turns negative after t = {t}"
-            raise ArithmeticError(msg)
+        ell_next, U_next = _next_stocks(ell, U, q, D_C, H_C, H_N, f, t)
 
         row = {
             "month": k,

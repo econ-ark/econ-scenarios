@@ -1,20 +1,18 @@
-"""Check that the supplement's cells still run in a reader's browser.
+"""Check that the supplement renders in a reader's browser, and fail on a launch control.
 
-The supplement is online only, and its point is that the reader edits a cell and re-runs it.
 The checks here stop at the file on disk. ``myst build`` exits 0, the pages and assets are
 written, and ``sitecheck`` finds the stylesheet and the equations sound, while the page itself
-is dead on arrival. That was the state of this site for a week, because the failure is a
+can be dead on arrival. That was the state of this site for a week, because the failure is a
 JavaScript exception thrown while the page renders, which only a browser sees.
 
-So this one does. It serves the built site over HTTP, because JupyterLite needs a real origin,
-loads the supplement, and reports what a reader would find: an uncaught exception, or no control
-to run a cell with.
+So this one does. It serves the built site over HTTP, loads the supplement, and reports what a
+reader would find: an uncaught exception, or a launch control. article-theme's launch control
+throws on the click (``LaunchBinder`` builds a URL from thebe's ``"/"`` sentinel,
+jupyter-book/myst-theme#955), so the site sets no ``jupyter`` key, and any value there, ``lite:
+false`` included, brings the control back (measured 2026-09-24). The cells' outputs come from
+the build, which executes them.
 
-It warns rather than fails by default. The theme's own launch control throws today
-(``LaunchBinder`` builds a URL from thebe's ``"/"`` sentinel), which is upstream and not
-something a release here can fix, and a gate that is red for a reason nobody can act on stops
-being read. ``--strict`` turns the same findings into a nonzero exit, which is what this should
-run as once the theme is fixed.
+``--strict`` turns the findings into a nonzero exit, which is how ``site.sh`` runs it.
 
 Usage: ``python -m browsercheck [_build/html] [--strict] [--page reproduction-appendix]``
 """
@@ -26,6 +24,7 @@ import contextlib
 import functools
 import http.server
 import logging
+import os
 import re
 import socket
 import socketserver
@@ -40,48 +39,55 @@ log = logging.getLogger("browsercheck")
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "_build" / "html"
-# The supplement, the one page whose cells are meant to run. The report is a PDF-first article
-# whose cells are all static, so checking it would assert nothing.
+# The supplement, the one page with code cells. The report is a PDF-first article whose cells
+# are all static, so checking it would assert nothing.
 PAGE = "reproduction-appendix"
-# Long enough for Pyodide to come down and thebe to draw its controls on a cold cache, and short
-# enough that a broken page reports in a minute and a half.
-READY_MS = 90_000
-# A class each site template renders and the other one never does, measured 2026-09-18 by
-# diffing one page's class names built both ways. A stale build of the WRONG template renders a
-# page that looks right and never names the template that made it; one was measured here for an
-# hour before a drifting button label gave it away.
+# A class each site template renders and the other never does (measured 2026-09-18). A stale
+# build of the WRONG template renders a page that looks right and never names its template; one
+# was measured here for an hour before a drifting button label gave it away.
 MARKERS = {"article-theme": "article-left-grid", "book-theme": "myst-toc-item"}
 TEMPLATE = re.compile(r"^\s+template:\s*(\S+)\s*$", re.MULTILINE)
-# A reader starts the kernel here, and one theme puts the label in title= while the other puts
-# it in the button's text. The crash this check exists for fires on that click, so a check that
-# only opens the page sees a healthy one (measured on the live site, 2026-09-18).
+# The launch control, which one theme labels in title= and the other in the button's text.
 LAUNCH = (
+    ".myst-jp-btn-binder, .myst-jp-btn-launch-binder, "
     "button[title*='compute session' i], button[title*='launch kernel' i], "
     "button:has-text('Launch kernel')"
 )
-# What thebe renders for a runnable cell once the kernel is up.
-CONTROLS = "button[title*='run cell' i], button[title*='run all' i]"
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
-    """A static handler that does not narrate every asset request."""
+    """A static handler that does not narrate every asset request, serving the site under
+    ``base``, the path prefix a project page has on GitHub Pages."""
 
-    def log_message(self, format: str, *args: object) -> None:  # noqa: A002, ARG002
+    base = ""
+
+    def translate_path(self, path: str) -> str:
+        if self.base and (path == self.base or path.startswith(self.base + "/")):
+            path = path[len(self.base) :] or "/"
+        return super().translate_path(path)
+
+    def log_message(self, format: str, *args: object) -> None:
         return
 
 
 @contextlib.contextmanager
-def serving(html: Path):
-    """The built site on a loopback port, for as long as the block runs."""
+def serving(html: Path, base: str = ""):
+    """The built site on a loopback port under ``base``, for as long as the block runs.
+
+    The Pages workflow builds with ``BASE_URL`` set to the repository's name, so every asset
+    URL in the page carries that prefix; served at the root instead, each one answers 404
+    (measured in CI, 2026-09-24).
+    """
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    handler = functools.partial(Quiet, directory=str(html))
+    mounted = type("Mounted", (Quiet,), {"base": base.rstrip("/")})
+    handler = functools.partial(mounted, directory=str(html))
     with socketserver.TCPServer(("127.0.0.1", port), handler) as httpd:
         thread = threading.Thread(target=httpd.serve_forever, daemon=True)
         thread.start()
         try:
-            yield f"http://127.0.0.1:{port}"
+            yield f"http://127.0.0.1:{port}{base.rstrip('/')}"
         finally:
             httpd.shutdown()
 
@@ -93,37 +99,40 @@ def declared_template(root: Path = ROOT) -> str | None:
 
 
 def visit(url: str) -> tuple[list[str], int, str]:
-    """Load ``url`` in Chrome and report its uncaught exceptions, run controls and page HTML."""
+    """Load ``url`` in Chrome and report its uncaught exceptions, launch controls and HTML."""
     thrown: list[str] = []
     with sync_playwright() as play:
         # The system Chrome, so no browser download: this has to run on a laptop and in CI.
         browser = play.chromium.launch(channel="chrome")
         page = browser.new_page()
         page.on("pageerror", lambda exc: thrown.append(str(exc).split("\n")[0]))
-        # React catches a throw from a component's render in an error boundary, so the one that
-        # kills this page never reaches pageerror. It reaches the console instead, which is why
-        # the first run of this check reported dead controls with the cause missing.
+        # React catches a render throw in an error boundary, so it never reaches pageerror; it
+        # reaches the console. "Failed to load resource" is skipped there, as it lacks the URL.
         page.on(
             "console",
             lambda msg: (
-                thrown.append(msg.text.split("\n")[0]) if msg.type == "error" else None
+                thrown.append(msg.text.split("\n")[0])
+                if msg.type == "error"
+                and not msg.text.startswith("Failed to load resource")
+                else None
+            ),
+        )
+        # A failed request, recorded here with the URL that failed.
+        page.on(
+            "response",
+            lambda r: (
+                thrown.append(f"{r.status} for {r.url}") if r.status >= 400 else None
             ),
         )
         page.goto(url, wait_until="networkidle")
-        # Start the kernel the way a reader does. Without this the page looks healthy: the
-        # published site answers, draws its controls, and logs nothing until the click.
-        with contextlib.suppress(PlaywrightError):
-            page.click(LAUNCH, timeout=READY_MS)
-        with contextlib.suppress(PlaywrightError):
-            page.wait_for_selector(CONTROLS, timeout=READY_MS, state="attached")
-        controls = page.locator(CONTROLS).count()
+        launches = page.locator(LAUNCH).count()
         served = page.content()
         browser.close()
-    return thrown, controls, served
+    return thrown, launches, served
 
 
 def check(html: Path = HTML, page: str = PAGE, url: str | None = None) -> list[str]:
-    """Every complaint about running the supplement, empty when a reader could run it.
+    """Every complaint about the supplement in a browser, empty when it renders cleanly.
 
     ``url`` checks a site that is already served, which is how this is pointed at the published
     one; otherwise the built directory is served here.
@@ -134,10 +143,10 @@ def check(html: Path = HTML, page: str = PAGE, url: str | None = None) -> list[s
         raise RuntimeError(msg)
     try:
         if url:
-            thrown, controls, served = visit(url)
+            thrown, launches, served = visit(url)
         else:
-            with serving(html) as origin:
-                thrown, controls, served = visit(f"{origin}/{page}/")
+            with serving(html, os.environ.get("BASE_URL", "")) as origin:
+                thrown, launches, served = visit(f"{origin}/{page}/")
     except PlaywrightError as exc:
         # A machine without Chrome cannot answer the question, so it says that instead. A check
         # that comes back clean when it never ran does more damage than one nobody wrote.
@@ -154,21 +163,24 @@ def check(html: Path = HTML, page: str = PAGE, url: str | None = None) -> list[s
     if MARKERS[declared] not in served:
         others = [t for t, mark in MARKERS.items() if mark in served]
         return [
-            f"the page served is {others[0] if others else 'from an unknown template'}, and "
-            f"myst.yml declares {declared}, so nothing measured here describes {declared}",
+            (
+                f"the page served is {others[0] if others else 'from an unknown template'}, and "
+                f"myst.yml declares {declared}, so nothing measured here describes {declared}"
+            ),
         ]
     for exc in dict.fromkeys(thrown):
         problems.append(f"{page} threw {exc!r} while rendering, which stops the page")
-    if not controls:
+    if launches:
         problems.append(
-            f"{page} drew no control a reader could run a cell with, so its cells are dead",
+            f"{page} draws a launch control, which throws on the click; drop the jupyter key "
+            "from myst.yml",
         )
     return problems
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Check that the supplement's cells can run.",
+        description="Check that the supplement renders in a browser without a launch control.",
     )
     parser.add_argument("html", nargs="?", default=str(HTML))
     parser.add_argument("--page", default=PAGE)
@@ -188,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
         sys.stderr.write(f"{'' if args.strict else 'warning: '}{problem}\n")
     if problems:
         return 1 if args.strict else 0
-    log.info("%s runs its cells in a browser", args.page)
+    log.info("%s renders in a browser with no launch control", args.page)
     return 0
 
 

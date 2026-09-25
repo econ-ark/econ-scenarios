@@ -21,39 +21,55 @@ HERE = Path(__file__).resolve().parent
 LEDGER = {
     "actual_rule": (
         ["R1"],
-        "Table A.1 panel D, row (39): 'the price index, the two groups' labor demands, and the supply "
-        "of capital at realized employment (l_C,t, l_N,t) ... the cognitive wage is the sticky wage "
-        "w_C,t, or MPL_C,t where employment trails demand'; App. A step 8: 'Record the actual economy's "
-        "GDP ... from the system (39) at realized employment, with the cognitive wage paid'",
-        "R2: the actual economy is system (39) at realized employment with C priced at its MPL; the "
-        "paid sticky wage is recorded separately. R1: C output is demand-determined at the sticky wage "
-        "when employment exceeds demand (effective C employment min(l_C, l^d_C)).",
+        (
+            "Table A.1 panel D, row (39): 'the price index, the two groups' labor demands, and the supply "
+            "of capital at realized employment (l_C,t, l_N,t) ... the cognitive wage is the sticky wage "
+            "w_C,t, or MPL_C,t where employment trails demand'; App. A step 8: 'Record the actual economy's "
+            "GDP ... from the system (39) at realized employment, with the cognitive wage paid'"
+        ),
+        (
+            "R2: the actual economy is system (39) at realized employment with C priced at its MPL; the "
+            "paid sticky wage is recorded separately. R1: C output is demand-determined at the sticky wage "
+            "when employment exceeds demand (effective C employment min(l_C, l^d_C))."
+        ),
     ),
     "A_in_39": (
         ["literal"],
-        "Table A.1 note to (39): 'and the wages deflated by A_t'; the labor-demand rows contain "
-        "Delta ln(Y_t/Lbar) with no A term",
-        "deflated: output in the labor-demand rows is net of Delta ln A (the only reading under which "
-        "'at the targets it is Proposition 1' holds). literal: Delta ln Y including A.",
+        (
+            "Table A.1 note to (39): 'and the wages deflated by A_t'; the labor-demand rows contain "
+            "Delta ln(Y_t/Lbar) with no A term"
+        ),
+        (
+            "deflated: output in the labor-demand rows is net of Delta ln A (the only reading under which "
+            "'at the targets it is Proposition 1' holds). literal: Delta ln Y including A."
+        ),
     ),
     "common_wage": (
         ["wN_current"],
         "Eq (30) and p. 19: 'This rigidity occurs relative to the common wage w_t'",
-        "prop1: w_t is the full-employment common wage of Prop. 1 (Table A.1 panel B wage row). "
-        "alt: the all-other wage at current employment.",
+        (
+            "prop1: w_t is the full-employment common wage of Prop. 1 (Table A.1 panel B wage row). "
+            "alt: the all-other wage at current employment."
+        ),
     ),
     "q_base": (
         ["0.0092", "cont_annual", "compound_annual", "data"],
-        "App. A: 'Rates quoted as fractions per period are converted to continuously compounded rates. "
-        "For example, a quit fraction qhat enters as q = -ln(1 - qhat).' Sec 3.2: 'We round it to 0.11 a "
-        "year, or 0.92 percent a month'",
-        "annual/12: qhat = 0.11/12 per month (the text's own 0.92), then converted. alts: 0.0092 as printed; "
-        "-ln(0.89)/12; 1-(0.89)^(1/12); unrounded 0.219 x 3.84/96.16.",
+        (
+            "App. A: 'Rates quoted as fractions per period are converted to continuously compounded rates. "
+            "For example, a quit fraction qhat enters as q = -ln(1 - qhat).' Sec 3.2: 'We round it to 0.11 a "
+            "year, or 0.92 percent a month'"
+        ),
+        (
+            "annual/12: qhat = 0.11/12 per month (the text's own 0.92), then converted. alts: 0.0092 as printed; "
+            "-ln(0.89)/12; 1-(0.89)^(1/12); unrounded 0.219 x 3.84/96.16."
+        ),
     ),
     "q_split": (
         ["printed", "ratio_data"],
-        "Table 1 D: 'qbar_C/qbar; qbar_N/qbar relative separation rates 0.69; 1.52'; Sec 2.3.2: "
-        "'qbar_C = 0.63 and qbar_N = 1.40 percent a month'",
+        (
+            "Table 1 D: 'qbar_C/qbar; qbar_N/qbar relative separation rates 0.69; 1.52'; Sec 2.3.2: "
+            "'qbar_C = 0.63 and qbar_N = 1.40 percent a month'"
+        ),
         "ratio: 0.69 and 1.52 times qbar. alts: 0.63% and 1.40% as printed; 0.84/1.84 renormalised.",
     ),
     "q_convert": (
@@ -63,8 +79,10 @@ LEDGER = {
     ),
     "theta_convert": (
         [True],
-        "App. A conversion sentence vs Table 1 'theta^H posting speed, per month' and Sec 2.3.1 "
-        "'post openings for a fraction theta^H of any shortfall per month'",
+        (
+            "App. A conversion sentence vs Table 1 'theta^H posting speed, per month' and Sec 2.3.1 "
+            "'post openings for a fraction theta^H of any shortfall per month'"
+        ),
         "False: theta^H enters (32) as printed. alt: theta = -ln(1 - theta^H).",
     ),
     "ga_sub": (
@@ -79,8 +97,10 @@ LEDGER = {
     ),
     "mubar_mode": (
         ["sqrt_odds", "one_in_seven"],
-        "Sec 3.2: 'mubar = sqrt(0.23 x 0.12) = 0.17'; Sec 2.3.2: 'the value at which the share of "
-        "job-finders ... who change groups equals one in seven'",
+        (
+            "Sec 3.2: 'mubar = sqrt(0.23 x 0.12) = 0.17'; Sec 2.3.2: 'the value at which the share of "
+            "job-finders ... who change groups equals one in seven'"
+        ),
         "printed 0.17. alts: sqrt(19/81 x 11/89) = 0.1703; fit to a 1/7 switching share.",
     ),
     "report_offset": (
@@ -110,8 +130,10 @@ LEDGER = {
     ),
     "labor_share": (
         ["paid"],
-        "Table A.1 D row (39) lists s_L,t among the actual economy's unknowns; 'cognitive firms' "
-        "profit (MPL_C - w_C) l_C'",
+        (
+            "Table A.1 D row (39) lists s_L,t among the actual economy's unknowns; 'cognitive firms' "
+            "profit (MPL_C - w_C) l_C'"
+        ),
         "price_index: s_L = 1 - B e^{(1-sigma) dlnr} (= 1 - rK/Y). alt: paid wage bill / Y.",
     ),
     "uC_denom": (
@@ -156,18 +178,26 @@ LEDGER = {
     ),
     "transfer_basis": (
         ["mid2026"],
-        "Fn 14: 'Holding cognitive occupations' income at its no-AI level would take a transfer "
-        "equal to 84 percent of GDP gains'; Sec 4.3: '31 percent below its previous path as wages "
-        "are 11.5 percent lower paid on 21.5 percent fewer jobs' (21.5 is the since-mid-2026 row)",
-        "t0: cognitive wage bill exp(dlnw_C) l_C / l_C,t0, the Table 3 wage-bill row. alt: employment "
-        "measured against mid-2026, as the Sec 4.3 sentence multiplies.",
+        (
+            "Fn 14: 'Holding cognitive occupations' income at its no-AI level would take a transfer "
+            "equal to 84 percent of GDP gains'; Sec 4.3: '31 percent below its previous path as wages "
+            "are 11.5 percent lower paid on 21.5 percent fewer jobs' (21.5 is the since-mid-2026 row)"
+        ),
+        (
+            "t0: cognitive wage bill exp(dlnw_C) l_C / l_C,t0, the Table 3 wage-bill row. alt: employment "
+            "measured against mid-2026, as the Sec 4.3 sentence multiplies."
+        ),
     ),
     "a_origin": (
         ["t0"],
-        "Eq (8): 'a_t = a_0 + g_a (t - t0)'; Table A.2: 'a_0 level of the gain at t0'; Table 1: 'a_t log "
-        "gain per instance, mid-2026 anchor'",
-        "anchor: a(2026.5) equals the Table 1 value, so a_2030 = 0.30/0.448/0.80. alt: a(t0) = Table 1 "
-        "value.",
+        (
+            "Eq (8): 'a_t = a_0 + g_a (t - t0)'; Table A.2: 'a_0 level of the gain at t0'; Table 1: 'a_t log "
+            "gain per instance, mid-2026 anchor'"
+        ),
+        (
+            "anchor: a(2026.5) equals the Table 1 value, so a_2030 = 0.30/0.448/0.80. alt: a(t0) = Table 1 "
+            "value."
+        ),
     ),
 }
 
@@ -193,11 +223,8 @@ def run_single(base_status, item, alt):
     }
 
 
-def main() -> None:
-    rows, _qual, _extra, _ = evaluate(dict(READINGS))
-    base = status(rows)
-    nbase = sum(v[0] for v in base.values())
-    log.info("baseline %d / %d", nbase, len(base))
+def _run_singles(base):
+    """One run per (item, alternative): hits, and the targets it gains or loses."""
     singles = []
     for item, (alts, _, _) in LEDGER.items():
         for alt in alts:
@@ -212,14 +239,24 @@ def main() -> None:
                 len(res["lost"]),
                 len(res["gained"]) + len(res["lost"]),
             )
-    # combination search over items whose alternative changes any status
+    return singles
+
+
+def _active_by_item(singles):
+    """Alternatives that change at least one target's status, grouped by item."""
     active = [(s["item"], s["alt"]) for s in singles if s["gained"] or s["lost"]]
     by_item = {}
     for item, alt in active:
         by_item.setdefault(item, []).append(alt)
+    return by_item
+
+
+def _greedy_search(by_item, nbase):
+    """Greedy forward selection from the baseline: repeatedly set the one item/alt change that
+    raises hits the most, until no change helps.
+    """
     items = sorted(by_item)
     log.info("active items for combination search: %s", items)
-    # greedy forward selection from baseline
     current = dict(READINGS)
     best = nbase
     improved = True
@@ -242,16 +279,23 @@ def main() -> None:
             path.append((item, alt, best))
             improved = True
             log.info("greedy: set %s=%s -> %d", item, alt, best)
-    # exhaustive search over alternatives that gain a target at a cost of at most MAXLOSS
-    # (alternatives that lose dozens of targets on their own are rejected outright)
+    return path
+
+
+def _helpful_alternatives(singles):
+    """Alternatives that gain a target at a cost of at most MAXLOSS, grouped by item
+    (alternatives that lose dozens of targets on their own are rejected outright).
+    """
     maxloss = 12
     keep = {}
     for s in singles:
         if s["gained"] and len(s["lost"]) <= maxloss:
             keep.setdefault(s["item"], []).append(s["alt"])
-    helpful = sorted(keep)
-    log.info("exhaustive over helpful items: %s", {i: keep[i] for i in helpful})
-    choices = [[READINGS[i]] + keep[i] for i in helpful]
+    return keep
+
+
+def _search_combinations(helpful, choices):
+    """Every combination of the helpful items' alternatives, best hits first."""
     top = []
     for combo in itertools.product(*choices):
         trial = dict(READINGS)
@@ -266,8 +310,32 @@ def main() -> None:
             ),
         )
     top.sort(key=lambda x: -x[0])
+    return top
+
+
+def _exhaustive_search(singles):
+    """Exhaustive search over the helpful alternatives' combinations."""
+    keep = _helpful_alternatives(singles)
+    helpful = sorted(keep)
+    log.info("exhaustive over helpful items: %s", {i: keep[i] for i in helpful})
+    choices = [[READINGS[i]] + keep[i] for i in helpful]
+    top = _search_combinations(helpful, choices)
     for h, combo, misses in top[:10]:
         log.info("combo %3d  %s  misses %s", h, combo, misses)
+    return helpful, top
+
+
+def main() -> None:
+    rows, _qual, _extra, _ = evaluate(dict(READINGS))
+    base = status(rows)
+    nbase = sum(v[0] for v in base.values())
+    log.info("baseline %d / %d", nbase, len(base))
+    singles = _run_singles(base)
+    # combination search over items whose alternative changes any status
+    by_item = _active_by_item(singles)
+    # greedy forward selection from baseline
+    path = _greedy_search(by_item, nbase)
+    helpful, top = _exhaustive_search(singles)
     out = {
         "baseline_hits": nbase,
         "n_targets": len(base),

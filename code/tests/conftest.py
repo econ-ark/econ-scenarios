@@ -11,8 +11,9 @@ import re
 from pathlib import Path
 
 import pytest
+
 from econ_scenarios import EXTREME, MODEST, SUBSTANTIAL, monthly_growth, simulate
-from tables import FRAGMENTS, MONTHS
+from tables import MONTHS
 
 # Every fixture module beside this one loads as a plugin. The directory is asked rather than a
 # name written down: conftest is carried by every cut, so a name here is a name every public
@@ -39,10 +40,6 @@ def pytest_collection_modifyitems(items) -> None:
             item.add_marker(pytest.mark.compute)
 
 
-# Only this repository's own page. A paper's other pages are named by that paper's fixtures, so
-# that a cut carries paths to the pages it has and to no others (measured 2026-09-18, when this
-# file put two paths to absent pages into a published repository).
-REPRODUCTION_PAGE = FRAGMENTS.parent / "reproduction.md"
 DECIMAL = re.compile(r"(?<![\w.])\d+\.\d+(?![\w.])")
 DATE = re.compile(r"\b(?:" + "|".join(MONTHS) + r") \d{4}\b")
 

@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import pytest
 from econ_scenarios import EXTREME, MODEST, SUBSTANTIAL, simulate
-from figures import DPI, OUT, build, figure_panels, layout_overlaps
+from figures import DPI, OUT, build, figure_panels, layout_overlaps, save_figure
 from theme import TEXT_WIDTH, WIDE_WIDTH
 
 SIMS = {s.name: simulate(s) for s in (MODEST, SUBSTANTIAL, EXTREME)}
@@ -15,6 +15,15 @@ def test_overlap_check_catches_colliding_labels() -> None:
     ax.text(0.52, 0.5, "second label")
     assert layout_overlaps(fig)
     plt.close(fig)
+
+
+def test_saving_refuses_overlapping_text_and_still_closes(tmp_path) -> None:
+    fig, ax = plt.subplots()
+    ax.text(0.5, 0.5, "first label")
+    ax.text(0.52, 0.5, "second label")
+    with pytest.raises(RuntimeError, match="x.png: overlapping text"):
+        save_figure(fig, tmp_path / "x.png")
+    assert not plt.fignum_exists(fig.number)
 
 
 # Figures still on the old wide canvas at 200 dpi, named in a file that only the papers owning

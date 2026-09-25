@@ -111,6 +111,16 @@ def test_the_published_sheet_sizes_the_quiz_iframe() -> None:
 
 
 @has_theme
+def test_the_published_sheet_names_no_hero_image() -> None:
+    """The house sheet's landing hero reads url("banner.svg") beside the stylesheet, which an
+    article site never serves, so sitecheck failed the Pages deploy on it (2026-09-24).
+    """
+    published = theme.site_css()
+    assert "--ark-hero-image: none;" in published
+    assert 'url("banner.svg")' not in published
+
+
+@has_theme
 def test_the_site_stylesheet_is_current() -> None:
     """``content/theme/site.css`` is generated from ``theme.css`` and ``local.css``, and MyST reads
     the generated file. An edit to either source that never reached it would leave the site on the

@@ -16,14 +16,15 @@ authors:
   - Alan Lujan
 abstract: >-
   An Econ-ARK REMARK that reimplements the monthly model of Korinek, Jones, Sacher, Cotter, and
-  McCrory (2026) and documents the twelve inputs, definitions, and orderings that a transparent
-  reproduction requires and the paper leaves unstated. The reproduction agrees with the authors'
-  scenario explorer in every series and month to within 3.5e-14 and reproduces all 226 published
-  numbers within the paper's printed rounding. One script fails when any number stops reproducing.
+  McCrory (2026) and records the twelve inputs, definitions, and orderings a reimplementation
+  needs beyond the paper's text, most of which can be read from the authors' scenario explorer.
+  The reimplementation agrees with the authors' scenario explorer in every series and month to
+  rounding error and reproduces all 226 published numbers within the paper's printed rounding. One
+  script fails when any number stops reproducing.
 DOI: "10.5281/zenodo.22839070"
 ---
 
-# Reproducing "Economic Scenarios for Transformative AI"
+# Reproducing “Economic Scenarios for Transformative AI”
 
 `reproduce.sh` installs the pinned environment with uv, downloads the public
 data behind the calibration rechecks, runs the test suite that gates every table, figure, and

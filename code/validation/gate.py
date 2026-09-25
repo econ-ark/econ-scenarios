@@ -11,10 +11,10 @@ import logging
 import sys
 from collections import Counter
 
-from econ_scenarios import EXTREME, MODEST, simulate
+from econ_scenarios import EXTREME, MODEST
 
 from .cases import CAL, ORACLE_CASES, PATH_TOLERANCE
-from .compare import path_differences, worst
+from .compare import case_gap, path_differences, worst
 from .oracle import run_explorer
 from .plants import PLANTS, planted
 from .published import cached_runner, checks, text_table_differences
@@ -29,23 +29,7 @@ def oracle_instrument() -> bool:
     )
     ok = True
     for case, spec in ORACLE_CASES.items():
-        sim = simulate(
-            spec.scenario,
-            spec.cal,
-            horizon=spec.horizon,
-            level_form=spec.form,
-        )
-        name, gap = worst(
-            path_differences(
-                sim,
-                run_explorer(
-                    spec.scenario,
-                    spec.cal,
-                    horizon=spec.horizon,
-                    level_form=spec.form,
-                ),
-            ),
-        )
+        sim, name, gap = case_gap(spec)
         ok &= gap < PATH_TOLERANCE
         log.info(
             "  %-22s %4d months, worst series %-14s %.2e",

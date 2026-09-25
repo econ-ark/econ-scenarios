@@ -6,18 +6,15 @@ differs from what the code computes now, the contract every fragment writer here
 
 from __future__ import annotations
 
-import argparse
-import logging
 import math
 import sys
 from collections import Counter
-from pathlib import Path
 
 from econ_scenarios import EXTREME, MODEST, SUBSTANTIAL
 from econ_scenarios.labor import N_BISECT_STEADY
 from econ_scenarios.production import N_BISECT, RENTAL_BRACKET
 from econ_scenarios.quiz import KAPPA_MAX
-from tables import table
+from tables import command, fragments_main, page_caption, table
 
 from .published import (
     FOOTNOTE14,
@@ -31,10 +28,8 @@ from .published import (
 )
 from .resolution import other_quit_reading, quit_window
 
-log = logging.getLogger("fragments")
 MODULE = "fragments.py"
 PACKAGE = "validation"
-FRAGMENTS = Path(__file__).resolve().parents[2] / "content" / "fragments"
 YEARS_TO_2030 = 3.5  # from the mid-2026 anchor
 FOOTNOTE14_XI = (
     0.5  # the wage rigidity Footnote 14's numbers identify, unstated in the note
@@ -92,7 +87,7 @@ def profit_share(run) -> float:
 
 
 def inventory() -> str:
-    """The inputs, definitions, and orderings the reproduction had to supply, one row each: where
+    """The inputs, definitions, and orderings a reimplementation needs beyond the text, one row each: where
     the paper's text stops, where the reproduction took the item from, and what turns on it.
     """
     run = cached_runner()
@@ -173,10 +168,7 @@ def inventory() -> str:
     rows = [
         [needed, *cells] for needed, cells in zip(INVENTORY_ROWS, rest, strict=True)
     ]
-    caption = (
-        "The inputs, definitions, and orderings the reproduction had to supply: where the paper's "
-        "text stops, where each was taken from, and what turns on it."
-    )
+    caption = page_caption("tbl-inventory")
     return table(
         [
             "What the reproduction needed",
@@ -222,14 +214,7 @@ def published_numbers(results: list[Check]) -> str:
             f"{sum(c.ok for c in results)} of {len(results)}",
         ],
     )
-    caption = (
-        "Every number the paper and the explorer page print that public inputs can reproduce, by source. "
-        "A number is predicted when the paper's text fixes how it is computed before any comparison, "
-        "and fitted when a definition or an unstated parameter had to be taken from the explorer or "
-        "inferred by matching. Inputs are the calibration and survey-coding values the model takes as "
-        "given, which no error in its dynamics could move; outputs are what the simulation produces. "
-        "The last column counts the numbers the reproduction prints as published at the paper's rounding."
-    )
+    caption = page_caption("tbl-published-numbers")
     return table(
         ["Source", "Predicted", "Fitted", "Inputs", "Outputs", "Within rounding"],
         rows,
@@ -249,24 +234,7 @@ def fragments() -> dict[str, str]:
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
-    parser = argparse.ArgumentParser(description=__doc__)
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--write", action="store_true")
-    mode.add_argument("--check", action="store_true")
-    args = parser.parse_args()
-    stale = []
-    for name, text in fragments().items():
-        path = FRAGMENTS / name
-        if args.write:
-            path.write_text(text)
-            log.info("wrote %s", path)
-        elif not path.exists() or path.read_text() != text:
-            stale.append(name)
-    if stale:
-        log.error("stale: %s", ", ".join(stale))
-        return 1
-    return 0
+    return fragments_main(__doc__, fragments, command(MODULE, PACKAGE))
 
 
 if __name__ == "__main__":

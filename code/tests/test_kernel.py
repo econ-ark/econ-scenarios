@@ -66,9 +66,11 @@ def test_the_served_file_is_the_one_that_runs() -> None:
 
 
 def test_a_file_the_site_does_not_serve_is_not_found() -> None:
-    with served(serve(CODE, {"econ_scenarios/labor.py": None})):
-        with pytest.raises(ModuleNotFoundError):
-            importlib.import_module("econ_scenarios")
+    with (
+        served(serve(CODE, {"econ_scenarios/labor.py": None})),
+        pytest.raises(ModuleNotFoundError),
+    ):
+        importlib.import_module("econ_scenarios")
 
 
 def test_top_level_modules_and_the_validation_package_load() -> None:

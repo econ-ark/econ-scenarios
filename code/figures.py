@@ -274,6 +274,20 @@ def label_ends(ax, ends: list[tuple[str, float, str]], gap: float = 0.11) -> Non
     at the 0.11 set here. ``layout_overlaps`` is what checks it, and fails the render when a face
     needs more room than the value allows.
     """
+    label_at(ax, ends, gap, (END + 0.05, END + 0.2), END + 0.25)
+
+
+def label_at(
+    ax,
+    ends: list[tuple[str, float, str]],
+    gap: float,
+    leader: tuple[float, float],
+    x: float,
+) -> None:
+    """Label each line at data coordinate ``x``, value first, nudging labels apart by ``gap`` of
+    the y-span and joining a moved label to its line with a leader between the two x coordinates
+    of ``leader``.
+    """
     lo, hi = ax.get_ylim()
     span = hi - lo
     heights = _place([v for _, v, _ in ends], gap=gap * span)
@@ -283,14 +297,14 @@ def label_ends(ax, ends: list[tuple[str, float, str]], gap: float = 0.11) -> Non
     for (text, value, color), height in zip(ends, heights, strict=False):
         if abs(height - value) > 0.01 * span:
             ax.plot(
-                [END + 0.05, END + 0.2],
+                list(leader),
                 [value, height],
                 color=GRID,
                 lw=0.5,
                 clip_on=False,
             )
         ax.text(
-            END + 0.25,
+            x,
             height,
             text,
             ha="left",
@@ -331,27 +345,35 @@ def build(panels: list[Panel], sims: dict[str, Simulation]):
 
 
 def render(name: str, panels: list[Panel], sims: dict[str, Simulation]) -> Path:
-    fig = build(panels, sims)
-    path = OUT / f"{name}.png"
+    return save_figure(build(panels, sims), OUT / f"{name}.png")
+
+
+def save_figure(fig, path: Path) -> Path:
+    """Save ``fig`` to ``path`` and close it, failing if any of its text overlaps at the
+    resolution it is saved at.
+    """
+    fig.set_dpi(DPI)
     fig.savefig(path, dpi=DPI, metadata={"Software": None}, facecolor="white")
     overlaps = layout_overlaps(fig)
     plt.close(fig)
     if overlaps:
-        msg = f"{name}: overlapping text: {overlaps}"
+        msg = f"{path.name}: overlapping text: {overlaps}"
         raise RuntimeError(msg)
     return path
 
 
-def layout_overlaps(fig) -> list[tuple[str, str]]:
-    """Visible text boxes that overlap each other, a spine they do not belong to, or leave the figure."""
-    renderer = fig.canvas.get_renderer()
-    fig.draw(renderer)
-    ticks = {
+def _tick_label_ids(fig) -> dict[int, matplotlib.text.Text]:
+    """Every tick label on ``fig``, keyed by id, so text boxes can be told apart from tick text."""
+    return {
         id(t.label1): t
         for ax in fig.axes
         for axis in (ax.xaxis, ax.yaxis)
         for t in axis.get_major_ticks()
     }
+
+
+def _drawn_tick_label_ids(fig) -> set[int]:
+    """Ids of the tick labels whose tick falls inside its axis' current view interval."""
     drawn = set()
     for ax in fig.axes:
         for axis in (ax.xaxis, ax.yaxis):
@@ -361,32 +383,60 @@ def layout_overlaps(fig) -> list[tuple[str, str]]:
                 for t in axis.get_major_ticks()
                 if lo - 1e-9 <= t.get_loc() <= hi + 1e-9
             }
-    texts = [
+    return drawn
+
+
+def _visible_texts(fig, renderer, ticks, drawn):
+    """Visible, non-empty text boxes, excluding tick labels whose tick was not drawn."""
+    return [
         (t, t.get_window_extent(renderer))
         for t in fig.findobj(mpl.text.Text)
         if t.get_text().strip()
         and t.get_visible()
         and (id(t) not in ticks or id(t) in drawn)
     ]
-    own = set(ticks)
-    spines = [
+
+
+def _visible_spines(fig, renderer):
+    """Window extents of every spine that is drawn."""
+    return [
         s.get_window_extent(renderer)
         for ax in fig.axes
         for s in ax.spines.values()
         if s.get_visible()
     ]
+
+
+def _text_box_issues(fig, a, box_a, later_texts, spines, own):
+    """Issues for one text box: leaving the figure, overlapping a later box, or overlapping a
+    spine it does not own.
+    """
+    issues = []
+    if not fig.bbox.contains(box_a.x0, box_a.y0) or not fig.bbox.contains(
+        box_a.x1,
+        box_a.y1,
+    ):
+        issues.append((a.get_text(), "outside the figure"))
+    for b, box_b in later_texts:
+        if box_a.overlaps(box_b):
+            issues.append((a.get_text(), b.get_text()))
+    if id(a) not in own and any(box_a.overlaps(s) for s in spines):
+        issues.append((a.get_text(), "a spine"))
+    return issues
+
+
+def layout_overlaps(fig) -> list[tuple[str, str]]:
+    """Visible text boxes that overlap each other, a spine they do not belong to, or leave the figure."""
+    renderer = fig.canvas.get_renderer()
+    fig.draw(renderer)
+    ticks = _tick_label_ids(fig)
+    drawn = _drawn_tick_label_ids(fig)
+    texts = _visible_texts(fig, renderer, ticks, drawn)
+    spines = _visible_spines(fig, renderer)
+    own = set(ticks)
     found = []
     for i, (a, box_a) in enumerate(texts):
-        if not fig.bbox.contains(box_a.x0, box_a.y0) or not fig.bbox.contains(
-            box_a.x1,
-            box_a.y1,
-        ):
-            found.append((a.get_text(), "outside the figure"))
-        for b, box_b in texts[i + 1 :]:
-            if box_a.overlaps(box_b):
-                found.append((a.get_text(), b.get_text()))
-        if id(a) not in own and any(box_a.overlaps(s) for s in spines):
-            found.append((a.get_text(), "a spine"))
+        found.extend(_text_box_issues(fig, a, box_a, texts[i + 1 :], spines, own))
     return found
 
 
